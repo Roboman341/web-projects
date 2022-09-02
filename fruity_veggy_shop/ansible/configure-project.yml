@@ -2,48 +2,91 @@
 - hosts: all
   become: true
   vars:
-      destination_application_path: /home/$USER
-      source_code: ../source_code
-      node_modules_dir_name: node_modules
+    destination_application_path: ansible-testing
+    node_modules_dir_name: node_modules
+    mongodb_data_folder: mongo_db_data
+    mongo_container_name: mongodb
+    mongo_docker_image_name: mongo
+    source_code_inner_folder_path: fruity_veggy_shop/source_code
+    source_code_folder_name: source_code
+    remote_user_name: ubuntu
 
   tasks:
-      - name: Display paths of all files in dir
-        ansible.builtin.debug: msg={{ lookup('ansible.builtin.fileglob', '../source_code') }}
+    - name: Define project directory path
+      ansible.builtin.shell: cd $(git rev-parse --show-toplevel) && pwd
+      register: project_root_path
+    - debug: var=project_root_path.stdout
+    - set_fact: project_directory_path="{{ project_root_path.stdout }}"
 
-      - name: Copy each file over that matches the given pattern
-        ansible.builtin.copy:
-            src: "{{ item }}"
-            dest: "{{ destination_application_path }}"
-            owner: "root"
-            mode: 0600
-        with_fileglob:
-            - "{{ source_code }}/*"
+    - name: Creates directory for project files
+      file:
+        path: "{{ destination_application_path }}"
+        state: directory
 
-      - name: Run a command
-        ansible.builtin.shell: sudo apt install -y npm
-        args:
-            executable: /bin/bash
+    - name: Change file ownership, group and permissions
+      ansible.builtin.file:
+        path: "{{ destination_application_path }}"
+        owner: "{{ remote_user_name }}"
+        group: "{{ remote_user_name }}"
+        mode: 0755
 
-      # - name: Run a command
-      #   ansible.builtin.shell: npm init
-      #   args:
-      #     executable: /bin/bash
+    - name: Copy project files
+      copy:
+        src: ~/projects/training/web-dev/web-projects/fruity_veggy_shop/source_code #"{{ project_directory_path }}/{{ source_code_inner_folder_path }}"
+        dest: "{{ destination_application_path }}"
+        owner: "{{ remote_user_name }}"
+        group: "{{ remote_user_name }}"
+        mode: 0755
+        force: yes
 
-      - name: Creates directory for node_modules
-        file:
-            path: "{{ node_modules_dir_name }}"
-            state: directory
+    - name: Creates directory for node_modules
+      file:
+        path: "{{ destination_application_path }}/{{ node_modules_dir_name }}"
+        state: directory
 
-      - name: Install packages based on package.json.
-        community.general.npm:
-            path: "{{ node_modules_dir_name }}"
+    - name: Install npm
+      ansible.builtin.apt:
+        name: npm
+        state: present
 
-      - name: Creates directory for mongo db data
-        file:
-            path: /data/db
-            state: directory
+    - name: Install packages based on package.json.
+      community.general.npm:
+        path: "{{ destination_application_path }}/{{ source_code_folder_name }}"
 
-      - name: Run a command
-        ansible.builtin.shell: docker run --name mongodb --rm -d -p 27017:27017 -v "{{ destination_application_path }}":/data/db mongo && node index.js
-        args:
-            executable: /bin/bash
+    - name: Creates directory for mongo db data
+      file:
+        path: "{{ destination_application_path }}/{{ mongodb_data_folder }}"
+        state: directory
+
+    - name: Add user to docker group
+      ansible.builtin.shell: usermod -aG docker $USER
+      ignore_errors: true
+      args:
+        executable: /bin/bash
+
+    - name: Remove old docker config
+      ansible.builtin.shell: docker stop "{{ mongo_container_name }}" && docker system prune -a
+      ignore_errors: true
+      args:
+        executable: /bin/bash
+
+    - name: Remove existing mongodb data
+      ansible.builtin.shell: rm -rf "/home/{{ remote_user_name }}/{{ destination_application_path }}/{{ mongodb_data_folder }}/*"
+      ignore_errors: true
+      args:
+        executable: /bin/bash
+
+    - name: Run docker
+      ansible.builtin.shell: docker run --name "{{ mongo_container_name }}" --rm -d -p 27017:27017 -v "/home/{{ remote_user_name }}/{{ destination_application_path }}/{{ mongodb_data_folder }}":"/{{ mongodb_data_folder }}" "{{ mongo_docker_image_name }}"
+      args:
+        executable: /bin/bash
+
+    - name: Add files to the database
+      ansible.builtin.shell: nohup node "{{ destination_application_path }}/{{ source_code_folder_name }}/initial_db_data.js" > /dev/null 2>&1 &
+      args:
+        executable: /bin/bash
+
+    - name: Start node
+      ansible.builtin.shell: nohup node "{{ destination_application_path }}/{{ source_code_folder_name }}/index.js" > /dev/null 2>&1 &
+      args:
+        executable: /bin/bash

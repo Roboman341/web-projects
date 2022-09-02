@@ -89,6 +89,6 @@ app.delete("/products/:id", async (req, res) => {
     res.redirect("/products");
 });
 
-app.listen(3000, () => {
-    console.log("APP IS LISTENING ON PORT 3000!");
+app.listen(3005, () => {
+    console.log("APP IS LISTENING ON PORT 3005!");
 });
