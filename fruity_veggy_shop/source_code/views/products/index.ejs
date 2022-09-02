@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>All Products</title>
+        <link rel="stylesheet" type="text/css" href="../styles/index.css" />
+    </head>
+
+    <body>
+        <section id="all_products">
+            <div>
+                <h1><%=category%> Products</h1>
+            </div>
+        </section>
+
+        <section id="products_section">
+                <% for(let product of products) { %>
+                <div>
+                    <a href="/products/<%=product._id%>" id="products_link"</i><%= product.name %></a>
+                </div>
+                <% }%>
+            <a href="/products/new">Add a new product</a>
+            <%if(category !== 'All') {%>
+            <a href="/products">All Products</a>
+            <% } %>
+        </section>
+    </body>
+</html>

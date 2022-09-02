@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" type="text/css" href="../styles/index.css" />
+        <title>New Product</title>
+    </head>
+    <body>
+        <div id="new_product_form">
+            <form action="/products" method="POST">
+                <label for="name">Product Name</label>
+                <input
+                    type="text"
+                    name="name"
+                    id="name"
+                    placeholder="product name"
+                />
+                <label for="price">Price($)</label>
+                <input
+                    type="number"
+                    step="any"
+                    name="price"
+                    id="price"
+                    placeholder="price"
+                />
+                <label for="category">Category</label>
+                <select name="category" id="category">
+                    <% for (let category of categories ) { %>
+                    <option value="<%=category%>"><%=category%></option>
+                    <% } %>
+                </select>
+                <label for="freshness">Freshness</label>
+                <select name="freshness" id="freshness">
+                    <% for (let level of freshness) {%>
+                    <option value="<%=level%>"><%=level%></option>
+                    <% } %>
+                </select>
+                <label for="notes">notes:</label>
+                <!-- crucial to have id and name the same field as product.js field is expecting. With this field it'll be saved into db as a key -->
+                <textarea
+                    id="notes"
+                    name="notes"
+                    rows="5"
+                    cols="30"
+                    placeholder="Please, leave your notes here
+                    &#010Your thoughts are very important for us... Joking, nobody cares"
+                ></textarea>
+                <br />
+                <button>Submit</button>
+                <a href="/products">Cancel creating</a>
+            </form>
+        </div>
+    </body>
+</html>

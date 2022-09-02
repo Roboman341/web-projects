@@ -1,0 +1,81 @@
+---
+- name: "Tests"
+  hosts: localhost
+  connection: local
+  vars:
+      destination_application_path: /home/$USER/ansible-testing
+      node_modules_dir_name: node_modules
+      mongodb_data_folder: mongo_db_data
+      mongo_container_name: mongodb
+      source_code: DEFINE THE PATH
+
+  tasks:
+      - name: just execute a ls -lrt command
+        ansible.builtin.shell: "ls -lrt && echo {{ source_code }}"
+        register: "output"
+        args:
+            executable: /bin/bash
+
+      - debug: var=output.stdout_lines
+
+      # - name: Display paths of all files in dir
+      #   ansible.builtin.debug: msg={{ lookup('ansible.builtin.fileglob', '../source_code') }}
+
+      - name: Creates directory for project files
+        file:
+            path: "{{ destination_application_path }}"
+            state: directory
+
+      - name: Change file ownership, group and permissions
+        ansible.builtin.file:
+            path: "{{ destination_application_path }}"
+            owner: rob
+            group: rob
+            mode: "0777"
+
+      # - name: Copy each file over that matches the given pattern
+      #   ansible.builtin.copy:
+      #       src: "{{ item }}"
+      #       dest: "{{ destination_application_path }}"
+      #       owner: "rob"
+      #       mode: 0600
+      #   with_fileglob:
+      #       - "{{ source_code }}/*"
+
+      - name: copy project files
+        copy:
+            src: "{{ source_code }}/*"
+            dest: "{{ destination_application_path }}"
+            owner: rob
+            group: rob
+            mode: 0644
+
+      - name: Creates directory for node_modules
+        file:
+            path: "{{ destination_application_path }}/{{ node_modules_dir_name }}"
+            state: directory
+
+      - name: Install packages based on package.json.
+        community.general.npm:
+            path: "{{ destination_application_path }}"
+
+      - name: Creates directory for mongo db data
+        file:
+            path: "{{ destination_application_path }}/{{ mongodb_data_folder }}"
+            state: directory
+
+      - name: remove old docker config
+        ansible.builtin.shell: docker stop "{{ mongo_container_name }}" && docker system prune -a
+        ignore_errors: true
+        args:
+            executable: /bin/bash
+
+      - name: Run docker
+        ansible.builtin.shell: docker run --name "{{ mongo_container_name }}" --rm -d -p 27017:27017 -v "{{ destination_application_path }}":"{{ destination_application_path }}/{{ mongodb_data_folder }}" mongo
+        args:
+            executable: /bin/bash
+
+      - name: Start node
+        ansible.builtin.shell: node "{{ destination_application_path }}"/index.js
+        args:
+            executable: /bin/bash

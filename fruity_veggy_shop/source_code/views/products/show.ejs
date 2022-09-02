@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" type="text/css" href="../styles/index.css" />
+        <title><%= product.name %></title>
+    </head>
+
+    <body>
+        <div id="all_products">
+            <h1><%= product.name %></h1>
+        </div>
+        <div id="one_product_div">
+            <ul>
+                <li>Price: $<%= product.price%></li>
+                <li>
+                    Category:
+                    <a href="/products?category=<%= product.category%>"
+                        ><%= product.category%></a
+                    >
+                </li>
+                <li>freshness: <%= product.freshness %></li>
+                <li>
+                    healthfulness: <%= product.healthfulness != null ?
+                    product.healthfulness: "none"%>
+                </li>
+                <li>
+                    <!-- notes: <%= product.notes === null ? product.notes: "none"%> -->
+                    <% if(product.notes){ %> notes: <%= product.notes %> <% }
+                    else{ %> notes: none <% } %>
+                </li>
+            </ul>
+            <a href="/products">All Products</a>
+            <a href="/products/<%=product._id%>/edit">Edit Product</a>
+            <form
+                action="/products/<%=product._id%>?_method=DELETE"
+                method="POST"
+            >
+                <button>Delete</button>
+            </form>
+        </div>
+    </body>
+</html>
